@@ -23,10 +23,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install FFmpeg
+      - name: Install System Dependencies (FFmpeg & OpenGL Mesa & Xvfb)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg libgl1-mesa-dri libgl1-mesa-glx libegl1-mesa mesa-utils xvfb
 
       - name: Install Node Dependencies
         run: npm install --legacy-peer-deps
@@ -40,7 +40,7 @@ jobs:
       - name: Render Full Episode Video
         run: |
           mkdir -p out
-          npx remotion render src/index.ts StickmanEpisode out/video.mp4 --gl=angle --crf=16 --pixel-format=yuv420p
+          xvfb-run -a npx remotion render src/index.ts StickmanEpisode out/video.mp4 --gl=angle --crf=16 --pixel-format=yuv420p --ignore-gpu-blocklist
 
       - name: Upload Rendered Video Artifact
         uses: actions/upload-artifact@v4
