@@ -23,10 +23,10 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install System Dependencies (FFmpeg & OpenGL Mesa & Xvfb)
+      - name: Install System Dependencies (Xvfb & OpenGL)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg libgl1-mesa-dri libgl1-mesa-glx libegl1-mesa mesa-utils xvfb
+          sudo apt-get install -y xvfb libgl1 libegl1
 
       - name: Install Node Dependencies
         run: npm install --legacy-peer-deps
