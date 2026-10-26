@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import type { SymbolicPropEvent } from '../types/schema.js';
+import type { SymbolicPropEvent } from '../types/schema';
 
 interface PropRendererProps {
   prop: SymbolicPropEvent;
@@ -13,7 +13,6 @@ export const PropRenderer: React.FC<PropRendererProps> = ({ prop }) => {
   const scale = prop.scaleMultiplier || 1.0;
   const color = prop.semanticColor || '#06B6D4';
 
-  // Emissive Bloom Material (toneMapped: false to breach threshold 1.1)
   const emissiveMaterial = useMemo(() => {
     return new THREE.MeshStandardMaterial({
       color: color,
@@ -21,11 +20,10 @@ export const PropRenderer: React.FC<PropRendererProps> = ({ prop }) => {
       emissiveIntensity: 2.2,
       roughness: 0.25,
       metalness: 0.1,
-      toneMapped: false, // Ensures pure Bloom glow
+      toneMapped: false,
     });
   }, [color]);
 
-  // Geometry for SVG Extrusion or Procedural Icon
   const geometry = useMemo(() => {
     if (prop.generationMethod === 'SVG_EXTRUSION' && prop.lucideIconName) {
       const icon = prop.lucideIconName;
@@ -103,7 +101,6 @@ export const PropRenderer: React.FC<PropRendererProps> = ({ prop }) => {
       scale={[scale * 1.5, scale * 1.5, scale * 1.5]}
     >
       <mesh geometry={geometry} material={emissiveMaterial} />
-      {/* Soft localized point light to cast gentle glow on surroundings */}
       <pointLight color={color} intensity={1.8} distance={140} decay={2} />
     </group>
   );

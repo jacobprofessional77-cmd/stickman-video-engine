@@ -1,14 +1,13 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
-import type { CharacterKeyframe } from '../types/schema.js';
+import type { CharacterKeyframe } from '../types/schema';
 
 interface CharacterRigProps {
   state: CharacterKeyframe;
   isBystander?: boolean;
 }
 
-// 5-point CatmullRom limb builder ensuring exact limb length and smooth joints
 function createLimbGeometry(
   start: any,
   mid: any,
@@ -30,11 +29,9 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
 
-  // Frame-deterministic micro-idle breathing loop (0.4 Hz, 2.5px)
   const breathingOffset =
     state.freezeBreathing ? 0 : Math.sin(2 * Math.PI * 0.4 * currentTime) * 2.5;
 
-  // Materials
   const clayMaterial = useMemo(() => {
     if (isBystander) {
       return new THREE.MeshStandardMaterial({
@@ -56,7 +53,6 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
     });
   }, [isBystander]);
 
-  // Joint angles
   const angles = state.customJointAngles || {};
   const spinePitch = (angles.spine?.[0] || 0) * (Math.PI / 180);
   const spineYaw = (angles.spine?.[1] || 0) * (Math.PI / 180);
@@ -76,13 +72,11 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
   const eRPitch = (angles.elbowR?.[0] || 0) * (Math.PI / 180);
   const eLPitch = (angles.elbowL?.[0] || 0) * (Math.PI / 180);
 
-  // Character root positioning
   const posX = state.positionX_3D + (state.pelvisOffset?.[0] || 0);
   const posY = state.positionY_3D + (state.pelvisOffset?.[1] || 0);
   const posZ = (state.positionZ_3D || 0) + (state.pelvisOffset?.[2] || 0);
   const facingYaw = (state.facingYawDeg || 0) * (Math.PI / 180);
 
-  // Arm kinematics calculation
   const armRightGeom = useMemo(() => {
     const start = new THREE.Vector3(26, 100 + breathingOffset, 0);
     const mid = new THREE.Vector3(
@@ -113,7 +107,6 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
     return createLimbGeometry(start, mid, end, 8, 5);
   }, [sLPitch, sLYaw, sLRoll, eLPitch, breathingOffset]);
 
-  // Legs geometry with horizontal foot lock
   const legRightGeom = useMemo(() => {
     const start = new THREE.Vector3(16, 0, 0);
     const mid = new THREE.Vector3(16, -80, 5);
@@ -130,45 +123,36 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
 
   return (
     <group position={[posX, posY, posZ]} rotation={[0, facingYaw, 0]} scale={[1.85, 1.85, 1.85]}>
-      {/* 1. Pelvis (Base of Spine) */}
       <mesh position={[0, 0, 0]} material={clayMaterial}>
         <cylinderGeometry args={[15, 14, 20, 16]} />
       </mesh>
 
-      {/* 2. Flexible Spine & Chest (C-Curve Spine Hierarchy) */}
       <group position={[0, 10, 0]} rotation={[spinePitch, spineYaw, spineRoll]}>
-        {/* Lower torso */}
         <mesh position={[0, 30 + breathingOffset * 0.4, 0]} material={clayMaterial}>
           <cylinderGeometry args={[20, 15, 50, 16]} />
         </mesh>
 
-        {/* Chest and Shoulders */}
         <mesh position={[0, 75 + breathingOffset, 0]} material={clayMaterial}>
           <cylinderGeometry args={[25, 20, 45, 16]} />
         </mesh>
 
-        {/* Neck with Pivot at base connecting to Head */}
         <group position={[0, 100 + breathingOffset, 0]} rotation={[neckPitch, neckYaw, 0]}>
           <mesh position={[0, 6, 0]} material={clayMaterial}>
             <cylinderGeometry args={[8, 9, 12, 16]} />
           </mesh>
 
-          {/* Smooth Pure Sphere Head (r = 24px) */}
           <mesh position={[0, 30, 0]} material={clayMaterial}>
             <sphereGeometry args={[24, 32, 32]} />
           </mesh>
         </group>
 
-        {/* Arms attached to upper chest */}
         <mesh geometry={armRightGeom} material={clayMaterial} />
         <mesh geometry={armLeftGeom} material={clayMaterial} />
       </group>
 
-      {/* 3. Legs attached to Pelvis */}
       <mesh geometry={legRightGeom} material={clayMaterial} />
       <mesh geometry={legLeftGeom} material={clayMaterial} />
 
-      {/* Horizontal Beveled Feet (Locked parallel to floor Y=0 relative) */}
       <mesh position={[16, -160, 8]} material={clayMaterial}>
         <boxGeometry args={[12, 6, 20]} />
       </mesh>

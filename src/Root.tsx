@@ -1,8 +1,8 @@
 import React from 'react';
 import { Composition } from 'remotion';
-import { EpisodeComposition } from './EpisodeComposition.js';
+import { EpisodeComposition } from './EpisodeComposition';
 import currentEpisodeData from './data/currentEpisode.json';
-import type { EpisodeBlueprint } from './types/schema.js';
+import type { EpisodeBlueprint } from './types/schema';
 
 export const Root: React.FC = () => {
   const blueprint = currentEpisodeData as unknown as EpisodeBlueprint;

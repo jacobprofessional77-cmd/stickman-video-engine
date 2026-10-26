@@ -1,9 +1,9 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import type { EpisodeBlueprint } from './types/schema.js';
-import { Stage3D } from './components/Stage3D.js';
-import { SubtitleOverlay } from './components/SubtitleOverlay.js';
-import { AudioEngine } from './components/AudioEngine.js';
+import type { EpisodeBlueprint } from './types/schema';
+import { Stage3D } from './components/Stage3D';
+import { SubtitleOverlay } from './components/SubtitleOverlay';
+import { AudioEngine } from './components/AudioEngine';
 
 interface EpisodeCompositionProps {
   blueprint: EpisodeBlueprint;

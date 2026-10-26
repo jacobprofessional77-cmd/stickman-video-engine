@@ -1,19 +1,18 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { ContactShadows, MeshReflectorMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
-import type { SceneBeat, StageConfig } from '../types/schema.js';
-import { CharacterRig } from './CharacterRig.js';
-import { PropRenderer } from './PropRenderer.js';
+import type { SceneBeat, StageConfig } from '../types/schema';
+import { CharacterRig } from './CharacterRig';
+import { PropRenderer } from './PropRenderer';
 
 interface Stage3DProps {
   stage: StageConfig;
   beats: SceneBeat[];
 }
 
-// Frame-Deterministic Camera Rig
 const CameraController: React.FC<{ beats: SceneBeat[] }> = ({ beats }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -55,7 +54,6 @@ const CameraController: React.FC<{ beats: SceneBeat[] }> = ({ beats }) => {
   return null;
 };
 
-// Deterministic Floating Depth Particles
 const DepthParticles: React.FC = () => {
   const frame = useCurrentFrame();
   const count = 40;
@@ -108,11 +106,9 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
       >
         <CameraController beats={beats} />
 
-        {/* 1. Background Twilight Cyclorama */}
         <color attach="background" args={[stage.atmospherePalette?.topSkyHex || '#0B0F19']} />
         <fog attach="fog" args={[stage.atmospherePalette?.horizonHex || '#161F33', 1800, 5500]} />
 
-        {/* Ambient Soft Moon in Upper Third */}
         {stage.showAmbientMoon && (
           <group position={[0, 480, -900]}>
             <mesh>
@@ -123,31 +119,26 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           </group>
         )}
 
-        {/* 2. Three-Point Lighting Setup */}
         <ambientLight intensity={isDanger ? 0.25 : 0.65} color="#94A3B8" />
 
-        {/* Key Light (Warm 45-degree angle from top-left) */}
         <directionalLight
           position={[-400, 600, 400]}
           intensity={isDanger ? 0.4 : 1.1}
           color="#FFF7ED"
         />
 
-        {/* Fill Light (Soft cool light at 18-20% ratio) */}
         <directionalLight
           position={[400, 300, 200]}
           intensity={isDanger ? 0.15 : 0.25}
           color="#CBD5E1"
         />
 
-        {/* Rim Back Light (Sharp separation) */}
         <directionalLight
           position={[0, 400, -500]}
           intensity={isDanger ? 1.4 : 0.8}
           color={isDanger ? '#F59E0B' : '#38BDF8'}
         />
 
-        {/* Top Spotlight activated during DANGER_REVEAL */}
         {isDanger && (
           <spotLight
             position={[0, 700, 0]}
@@ -159,7 +150,6 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           />
         )}
 
-        {/* 3. Stage Floor with Real-Time Planar Reflections */}
         <mesh position={[0, -340, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[2600, 2600]} />
           <MeshReflectorMaterial
@@ -179,7 +169,6 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           />
         </mesh>
 
-        {/* Contact Shadows slightly raised at Y=-339.5 to prevent Z-fighting */}
         <ContactShadows
           position={[0, -339.5, 0]}
           opacity={0.45}
@@ -188,7 +177,6 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           far={120}
         />
 
-        {/* 4. Stage Architectural Elements */}
         {stage.elements.map((el) => {
           if (el.geometryRecipe === 'COMPOUND_PRIMITIVES' && el.compoundParts) {
             return (
@@ -223,11 +211,9 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           );
         })}
 
-        {/* 5. Main Stickman Mannequins */}
         <CharacterRig state={activeBeat.victimState} isBystander={false} />
         <CharacterRig state={activeBeat.manipulatorState} isBystander={false} />
 
-        {/* Bystanders in background */}
         {stage.bystanderPositions &&
           stage.bystanderPositions.map((pos, bIdx) => (
             <group key={bIdx} position={pos}>
@@ -243,19 +229,16 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
             </group>
           ))}
 
-        {/* 6. Active Symbolic Props */}
         {activeBeat.propEvents &&
           activeBeat.propEvents.map((prop) => (
             <PropRenderer key={prop.propId} prop={prop} />
           ))}
 
-        {/* 7. Deterministic Depth Particles */}
         <DepthParticles />
 
-        {/* 8. Post-Processing Selective Bloom */}
         <EffectComposer multisampling={8}>
           <Bloom
-            luminanceThreshold={1.1} // Strictly protects white mannequin (#F8FAFC)
+            luminanceThreshold={1.1}
             mipmapBlur
             intensity={0.85}
             radius={0.6}
