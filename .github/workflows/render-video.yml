@@ -1,0 +1,51 @@
+name: Render 3D Stickman Video
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: render-episode
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: Headless 30FPS Remotion Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install System Dependencies (Chromium & OpenGL Angle)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libgbm1 libnss3 libxcomposite1 libxdamage1 libxrandr2 ffmpeg fonts-noto-cjk fonts-noto-color-emoji
+
+      - name: Install Node Dependencies
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Generate Episode SFX & Verify Blueprint
+        run: |
+          node scripts/build-episode.mjs
+          node scripts/generate-sfx.mjs
+          node scripts/validate-episode.mjs
+
+      - name: Render Full Episode Video
+        run: |
+          mkdir -p out
+          npx remotion render src/index.ts StickmanEpisode out/video.mp4 --gl=angle --crf=16 --pixel-format=yuv420p
+
+      - name: Upload Rendered Video Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rendered-episode
+          path: out/video.mp4
+          retention-days: 7
+          if-no-files-found: error

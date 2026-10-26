@@ -1,0 +1,34 @@
+{
+  "name": "stickman-video-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "3D Stickman Video Engine for Body Language & Behavioral Dynamics with Remotion + React Three Fiber",
+  "scripts": {
+    "build:episode": "node scripts/build-episode.mjs",
+    "generate:sfx": "node scripts/generate-sfx.mjs",
+    "validate": "node scripts/validate-episode.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "remotion bundle src/index.ts"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.96.1",
+    "@react-three/fiber": "^8.15.16",
+    "@react-three/postprocessing": "^2.16.0",
+    "@remotion/google-fonts": "^4.0.218",
+    "@remotion/media-utils": "^4.0.218",
+    "lucide-static": "^0.453.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.218",
+    "three": "^0.160.0",
+    "three-stdlib": "^2.29.4"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.218",
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/three": "^0.160.0",
+    "typescript": "^5.3.3"
+  }
+}
