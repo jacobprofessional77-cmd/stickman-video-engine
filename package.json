@@ -17,6 +17,7 @@
     "@remotion/google-fonts": "^4.0.218",
     "@remotion/media-utils": "^4.0.218",
     "lucide-static": "^0.453.0",
+    "mediabunny": "^1.23.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "remotion": "^4.0.218",
