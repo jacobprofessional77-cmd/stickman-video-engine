@@ -154,8 +154,8 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           <planeGeometry args={[2600, 2600]} />
           <MeshReflectorMaterial
             {...({
-              blur: [150, 40],
-              resolution: 1024,
+              blur: [60, 20],
+              resolution: 512,
               mirror: stage.floorReflectivity || 0.6,
               mixBlur: 0.7,
               mixStrength: 1.5,
@@ -236,7 +236,7 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
 
         <DepthParticles />
 
-        <EffectComposer multisampling={8}>
+        <EffectComposer multisampling={2}>
           <Bloom
             luminanceThreshold={1.1}
             mipmapBlur
