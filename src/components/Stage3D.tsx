@@ -48,7 +48,7 @@ const CameraController: React.FC<{ beats: SceneBeat[] }> = ({ beats }) => {
   const posZ = Math.cos(orbitalRad) * targetZ;
 
   camera.position.set(posX, posY, posZ);
-  camera.lookAt(panX, -60, 0);
+  camera.lookAt(panX, -120, 0);
 
   return null;
 };
@@ -104,10 +104,10 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
       <Canvas
-        frameloop="demand"
+        frameloop="always"
         dpr={1}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
-        camera={{ position: [200, 60, 2100], fov: 38, near: 10, far: 8000 }}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        camera={{ position: [0, 60, 1800], fov: 38, near: 10, far: 8000 }}
       >
         <CameraController beats={beats} />
 
