@@ -55,33 +55,38 @@ const CameraController: React.FC<{ beats: SceneBeat[] }> = ({ beats }) => {
 };
 
 const DepthParticles: React.FC = () => {
-  const frame = useCurrentFrame();
   const count = 40;
 
-  const particles = React.useMemo(() => {
-    const list = [];
+  const positions = React.useMemo(() => {
+    const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      const baseX = ((i * 47) % 800) - 400;
-      const baseY = ((i * 31) % 600) - 200;
-      const baseZ = ((i * 59) % 600) - 300;
-      list.push({ baseX, baseY, baseZ, speed: 0.4 + (i % 5) * 0.15 });
+      pos[i * 3] = ((i * 47) % 800) - 400;
+      pos[i * 3 + 1] = ((i * 31) % 600) - 200;
+      pos[i * 3 + 2] = ((i * 59) % 600) - 300;
     }
-    return list;
+    return pos;
   }, []);
 
   return (
-    <group>
-      {particles.map((p, idx) => {
-        const y = p.baseY + Math.sin((frame * 0.04 * p.speed) + idx) * 15;
-        const x = p.baseX + Math.cos((frame * 0.03 * p.speed) + idx) * 10;
-        return (
-          <mesh key={idx} position={[x, y, p.baseZ]}>
-            <sphereGeometry args={[1.8, 8, 8]} />
-            <meshBasicMaterial {...({ color: '#94A3B8', transparent: true, opacity: 0.12 } as any)} />
-          </mesh>
-        );
-      })}
-    </group>
+    <points>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={count}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        {...({
+          size: 3.5,
+          color: '#94A3B8',
+          transparent: true,
+          opacity: 0.15,
+          sizeAttenuation: true,
+        } as any)}
+      />
+    </points>
   );
 };
 
@@ -100,8 +105,9 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}>
       <Canvas
+        frameloop="demand"
         dpr={1}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 90, 2100], fov: 38, near: 10, far: 8000 }}
       >
         <CameraController beats={beats} />
@@ -167,6 +173,7 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
           scale={700}
           blur={2.5}
           far={120}
+          frames={1}
         />
 
         {stage.elements.map((el) => {
@@ -228,11 +235,11 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
 
         <DepthParticles />
 
-        <EffectComposer multisampling={2}>
+        <EffectComposer multisampling={0}>
           <Bloom
             luminanceThreshold={1.1}
-            intensity={0.75}
-            radius={0.5}
+            intensity={0.6}
+            radius={0.4}
           />
         </EffectComposer>
       </Canvas>
