@@ -8,48 +8,38 @@ interface CharacterRigProps {
   isBystander?: boolean;
 }
 
-function createLimbGeometry(
-  start: any,
-  mid: any,
-  end: any,
-  radiusTop: number,
-  radiusBottom: number
-): any {
-  const v1 = new THREE.Vector3().subVectors(start, mid).normalize().multiplyScalar(12);
-  const pPre = new THREE.Vector3().addVectors(mid, v1);
-  const v2 = new THREE.Vector3().subVectors(end, mid).normalize().multiplyScalar(12);
-  const pPost = new THREE.Vector3().addVectors(mid, v2);
-
-  const curve = new THREE.CatmullRomCurve3([start, pPre, mid, pPost, end]);
-  return new THREE.TubeGeometry(curve, 20, (radiusTop + radiusBottom) / 2, 12, false);
-}
-
 export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander = false }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
 
-  const breathingOffset =
-    state.freezeBreathing ? 0 : Math.sin(2 * Math.PI * 0.4 * currentTime) * 2.5;
+  const breathing = state.freezeBreathing ? 0 : Math.sin(2 * Math.PI * 0.4 * currentTime) * 1.8;
 
+  // Premium Pathlight Visuals Soft Clay Material
   const clayMaterial = useMemo(() => {
     if (isBystander) {
       return new THREE.MeshStandardMaterial({
-        color: '#475569',
+        color: '#334155',
         roughness: 0.85,
         metalness: 0.0,
         transparent: true,
-        opacity: 0.7,
-        toneMapped: true,
+        opacity: 0.45,
       });
     }
     return new THREE.MeshStandardMaterial({
       color: '#F8FAFC',
-      roughness: 0.85,
-      metalness: 0.0,
+      roughness: 0.55,
+      metalness: 0.05,
       emissive: new THREE.Color('#FFFFFF'),
-      emissiveIntensity: 0.18,
-      toneMapped: true,
+      emissiveIntensity: 0.08,
+    });
+  }, [isBystander]);
+
+  const jointMaterial = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: isBystander ? '#1E293B' : '#E2E8F0',
+      roughness: 0.6,
+      metalness: 0.05,
     });
   }, [isBystander]);
 
@@ -77,90 +67,133 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
   const posZ = (state.positionZ_3D || 0) + (state.pelvisOffset?.[2] || 0);
   const facingYaw = (state.facingYawDeg || 0) * (Math.PI / 180);
 
-  const armRightGeom = useMemo(() => {
-    const start = new THREE.Vector3(26, 100, 0);
-    const mid = new THREE.Vector3(
-      26 + 60 * Math.sin(sRRoll) * Math.cos(sRPitch),
-      100 - 60 * Math.cos(sRPitch),
-      60 * Math.sin(sRPitch)
-    );
-    const end = new THREE.Vector3(
-      mid.x + 60 * Math.sin(sRRoll + 0.1) * Math.cos(sRPitch + eRPitch),
-      mid.y - 60 * Math.cos(sRPitch + eRPitch),
-      mid.z + 60 * Math.sin(sRPitch + eRPitch)
-    );
-    return createLimbGeometry(start, mid, end, 8, 5);
-  }, [sRPitch, sRYaw, sRRoll, eRPitch]);
-
-  const armLeftGeom = useMemo(() => {
-    const start = new THREE.Vector3(-26, 100, 0);
-    const mid = new THREE.Vector3(
-      -26 - 60 * Math.sin(-sLRoll) * Math.cos(sLPitch),
-      100 - 60 * Math.cos(sLPitch),
-      60 * Math.sin(sLPitch)
-    );
-    const end = new THREE.Vector3(
-      mid.x - 60 * Math.sin(-sLRoll + 0.1) * Math.cos(sLPitch + eLPitch),
-      mid.y - 60 * Math.cos(sLPitch + eLPitch),
-      mid.z + 60 * Math.sin(sLPitch + eLPitch)
-    );
-    return createLimbGeometry(start, mid, end, 8, 5);
-  }, [sLPitch, sLYaw, sLRoll, eLPitch]);
-
-  const legRightGeom = useMemo(() => {
-    const start = new THREE.Vector3(16, 0, 0);
-    const mid = new THREE.Vector3(16, -80, 5);
-    const end = new THREE.Vector3(16, -160, 0);
-    return createLimbGeometry(start, mid, end, 10, 6);
-  }, []);
-
-  const legLeftGeom = useMemo(() => {
-    const start = new THREE.Vector3(-16, 0, 0);
-    const mid = new THREE.Vector3(-16, -80, 5);
-    const end = new THREE.Vector3(-16, -160, 0);
-    return createLimbGeometry(start, mid, end, 10, 6);
-  }, []);
-
   return (
-    <group position={[posX, posY, posZ]} rotation={[0, facingYaw, 0]} scale={[1.85, 1.85, 1.85]}>
-      <mesh position={[0, 0, 0]} material={clayMaterial}>
-        <cylinderGeometry args={[15, 14, 20, 16]} />
+    <group position={[posX, posY, posZ]} rotation={[0, facingYaw, 0]} scale={[1.7, 1.7, 1.7]}>
+      {/* Pelvis & Hips */}
+      <mesh position={[0, 160, 0]} material={clayMaterial}>
+        <cylinderGeometry args={[14, 11, 18, 24]} />
+      </mesh>
+      <mesh position={[0, 152, 0]} material={jointMaterial}>
+        <sphereGeometry args={[11, 20, 20]} />
       </mesh>
 
-      <group position={[0, 10, 0]} rotation={[spinePitch, spineYaw, spineRoll]}>
-        <mesh position={[0, 30 + breathingOffset * 0.4, 0]} material={clayMaterial}>
-          <cylinderGeometry args={[20, 15, 50, 16]} />
+      {/* Flexible Articulated Spine */}
+      <group position={[0, 168, 0]} rotation={[spinePitch, spineYaw, spineRoll]}>
+        {/* Lower Abdomen */}
+        <mesh position={[0, 16, 0]} material={clayMaterial}>
+          <cylinderGeometry args={[15, 13, 24, 24]} />
         </mesh>
 
-        <group position={[0, breathingOffset, 0]}>
-          <mesh position={[0, 75, 0]} material={clayMaterial}>
-            <cylinderGeometry args={[25, 20, 45, 16]} />
+        {/* Chest with Breathing Dynamics */}
+        <group position={[0, 32 + breathing, 0]}>
+          <mesh position={[0, 18, 0]} material={clayMaterial}>
+            <cylinderGeometry args={[20, 15, 34, 24]} />
           </mesh>
 
-          <group position={[0, 100, 0]} rotation={[neckPitch, neckYaw, 0]}>
+          {/* Neck & Pure Smooth Sphere Head */}
+          <group position={[0, 36, 0]} rotation={[neckPitch, neckYaw, 0]}>
             <mesh position={[0, 6, 0]} material={clayMaterial}>
-              <cylinderGeometry args={[8, 9, 12, 16]} />
+              <cylinderGeometry args={[6.5, 8, 14, 20]} />
             </mesh>
-
-            <mesh position={[0, 30, 0]} material={clayMaterial}>
-              <sphereGeometry args={[24, 32, 32]} />
+            <mesh position={[0, 26, 0]} material={clayMaterial}>
+              <sphereGeometry args={[19, 36, 36]} />
             </mesh>
           </group>
 
-          <mesh geometry={armRightGeom} material={clayMaterial} />
-          <mesh geometry={armLeftGeom} material={clayMaterial} />
+          {/* Right Arm */}
+          <group position={[23, 28, 0]} rotation={[sRPitch, sRYaw, sRRoll]}>
+            <mesh position={[0, 0, 0]} material={jointMaterial}>
+              <sphereGeometry args={[6.2, 18, 18]} />
+            </mesh>
+            <mesh position={[0, -25, 0]} material={clayMaterial}>
+              <cylinderGeometry args={[5.2, 4.2, 50, 18]} />
+            </mesh>
+            {/* Right Elbow & Forearm */}
+            <group position={[0, -50, 0]} rotation={[eRPitch, 0, 0]}>
+              <mesh position={[0, 0, 0]} material={jointMaterial}>
+                <sphereGeometry args={[4.4, 16, 16]} />
+              </mesh>
+              <mesh position={[0, -22, 0]} material={clayMaterial}>
+                <cylinderGeometry args={[4.2, 3.2, 44, 18]} />
+              </mesh>
+              {/* Hand */}
+              <mesh position={[0, -46, 0]} material={clayMaterial}>
+                <sphereGeometry args={[3.8, 16, 16]} />
+              </mesh>
+            </group>
+          </group>
+
+          {/* Left Arm */}
+          <group position={[-23, 28, 0]} rotation={[sLPitch, sLYaw, sLRoll]}>
+            <mesh position={[0, 0, 0]} material={jointMaterial}>
+              <sphereGeometry args={[6.2, 18, 18]} />
+            </mesh>
+            <mesh position={[0, -25, 0]} material={clayMaterial}>
+              <cylinderGeometry args={[5.2, 4.2, 50, 18]} />
+            </mesh>
+            {/* Left Elbow & Forearm */}
+            <group position={[0, -50, 0]} rotation={[eLPitch, 0, 0]}>
+              <mesh position={[0, 0, 0]} material={jointMaterial}>
+                <sphereGeometry args={[4.4, 16, 16]} />
+              </mesh>
+              <mesh position={[0, -22, 0]} material={clayMaterial}>
+                <cylinderGeometry args={[4.2, 3.2, 44, 18]} />
+              </mesh>
+              {/* Hand */}
+              <mesh position={[0, -46, 0]} material={clayMaterial}>
+                <sphereGeometry args={[3.8, 16, 16]} />
+              </mesh>
+            </group>
+          </group>
         </group>
       </group>
 
-      <mesh geometry={legRightGeom} material={clayMaterial} />
-      <mesh geometry={legLeftGeom} material={clayMaterial} />
+      {/* Legs (Anchored to Floor at Y = 0) */}
+      {/* Right Leg */}
+      <group position={[12, 150, 0]}>
+        <mesh position={[0, 0, 0]} material={jointMaterial}>
+          <sphereGeometry args={[7.2, 18, 18]} />
+        </mesh>
+        <mesh position={[0, -36, 0]} material={clayMaterial}>
+          <cylinderGeometry args={[7.2, 5.2, 72, 18]} />
+        </mesh>
+        {/* Knee & Shin */}
+        <group position={[0, -72, 0]}>
+          <mesh position={[0, 0, 0]} material={jointMaterial}>
+            <sphereGeometry args={[5.5, 16, 16]} />
+          </mesh>
+          <mesh position={[0, -36, 0]} material={clayMaterial}>
+            <cylinderGeometry args={[5.2, 3.8, 72, 18]} />
+          </mesh>
+          {/* Foot flat on floor */}
+          <mesh position={[0, -74, 5]} material={clayMaterial}>
+            <boxGeometry args={[9, 5, 20]} />
+          </mesh>
+        </group>
+      </group>
 
-      <mesh position={[16, -160, 8]} material={clayMaterial}>
-        <boxGeometry args={[12, 6, 20]} />
-      </mesh>
-      <mesh position={[-16, -160, 8]} material={clayMaterial}>
-        <boxGeometry args={[12, 6, 20]} />
-      </mesh>
+      {/* Left Leg */}
+      <group position={[-12, 150, 0]}>
+        <mesh position={[0, 0, 0]} material={jointMaterial}>
+          <sphereGeometry args={[7.2, 18, 18]} />
+        </mesh>
+        <mesh position={[0, -36, 0]} material={clayMaterial}>
+          <cylinderGeometry args={[7.2, 5.2, 72, 18]} />
+        </mesh>
+        {/* Knee & Shin */}
+        <group position={[0, -72, 0]}>
+          <mesh position={[0, 0, 0]} material={jointMaterial}>
+            <sphereGeometry args={[5.5, 16, 16]} />
+          </mesh>
+          <mesh position={[0, -36, 0]} material={clayMaterial}>
+            <cylinderGeometry args={[5.2, 3.8, 72, 18]} />
+          </mesh>
+          {/* Foot flat on floor */}
+          <mesh position={[0, -74, 5]} material={clayMaterial}>
+            <boxGeometry args={[9, 5, 20]} />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
 };

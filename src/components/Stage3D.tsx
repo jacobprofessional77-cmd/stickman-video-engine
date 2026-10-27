@@ -1,7 +1,6 @@
 import React from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { ContactShadows, MeshReflectorMaterial } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import type { SceneBeat, StageConfig } from '../types/schema';
@@ -32,37 +31,37 @@ const CameraController: React.FC<{ beats: SceneBeat[] }> = ({ beats }) => {
     Math.min(1, (currentTime - currentBeat.startTime) / Math.max(0.01, currentBeat.endTime - currentBeat.startTime))
   );
 
-  const ease =
-    currentBeat.camera.transitionCurve === 'WHIP_ZOOM_IN'
-      ? Math.pow(beatProgress, 3)
-      : 0.5 * (1 - Math.cos(Math.PI * beatProgress));
+  // Smooth cubic ease transition between beats
+  const ease = 0.5 * (1 - Math.cos(Math.PI * beatProgress));
 
-  const targetZ = currentBeat.camera.targetZ + (nextBeat.camera.targetZ - currentBeat.camera.targetZ) * ease * 0.15;
-  const panX = (currentBeat.camera.panX || 0) + ((nextBeat.camera.panX || 0) - (currentBeat.camera.panX || 0)) * ease * 0.15;
-  const elev = currentBeat.camera.elevationOffset + (nextBeat.camera.elevationOffset - currentBeat.camera.elevationOffset) * ease * 0.15;
-  const orbital = (currentBeat.camera.orbitalAngleDeg || 0) * (Math.PI / 180);
-  const tilt = (currentBeat.camera.dutchTiltDeg || 0) * (Math.PI / 180);
+  // Natural 3D orbital camera placement (avoiding dead flat 2D angles)
+  const targetZ = currentBeat.camera.targetZ + (nextBeat.camera.targetZ - currentBeat.camera.targetZ) * ease;
+  const panX = (currentBeat.camera.panX || 0) + ((nextBeat.camera.panX || 0) - (currentBeat.camera.panX || 0)) * ease;
+  const elev = (currentBeat.camera.elevationOffset || 60) + ((nextBeat.camera.elevationOffset || 60) - (currentBeat.camera.elevationOffset || 60)) * ease;
+  
+  // Cinematic 12-degree orbital angle for 3D depth
+  const orbitalDeg = (currentBeat.camera.orbitalAngleDeg ?? 12) + ((nextBeat.camera.orbitalAngleDeg ?? 12) - (currentBeat.camera.orbitalAngleDeg ?? 12)) * ease;
+  const orbitalRad = orbitalDeg * (Math.PI / 180);
 
-  const posX = panX + Math.sin(orbital) * targetZ;
+  const posX = panX + Math.sin(orbitalRad) * targetZ;
   const posY = elev;
-  const posZ = Math.cos(orbital) * targetZ;
+  const posZ = Math.cos(orbitalRad) * targetZ;
 
   camera.position.set(posX, posY, posZ);
-  camera.lookAt(panX, 0, 0);
-  camera.rotation.z = tilt;
+  camera.lookAt(panX, -60, 0);
 
   return null;
 };
 
+// Subtle atmospheric depth particles
 const DepthParticles: React.FC = () => {
-  const count = 40;
-
+  const count = 30;
   const positions = React.useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      pos[i * 3] = ((i * 47) % 800) - 400;
-      pos[i * 3 + 1] = ((i * 31) % 600) - 200;
-      pos[i * 3 + 2] = ((i * 59) % 600) - 300;
+      pos[i * 3] = ((i * 53) % 900) - 450;
+      pos[i * 3 + 1] = ((i * 37) % 500) - 150;
+      pos[i * 3 + 2] = ((i * 67) % 700) - 350;
     }
     return pos;
   }, []);
@@ -79,10 +78,10 @@ const DepthParticles: React.FC = () => {
       </bufferGeometry>
       <pointsMaterial
         {...({
-          size: 3.5,
+          size: 3.0,
           color: '#94A3B8',
           transparent: true,
-          opacity: 0.15,
+          opacity: 0.18,
           sizeAttenuation: true,
         } as any)}
       />
@@ -108,140 +107,129 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
         frameloop="demand"
         dpr={1}
         gl={{ antialias: false, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 90, 2100], fov: 38, near: 10, far: 8000 }}
+        camera={{ position: [200, 60, 2100], fov: 38, near: 10, far: 8000 }}
       >
         <CameraController beats={beats} />
 
-        <color attach="background" args={[stage.atmospherePalette?.topSkyHex || '#0B0F19']} />
-        <fog attach="fog" args={[stage.atmospherePalette?.horizonHex || '#161F33', 1800, 5500]} />
+        {/* Cinematic Deep Dusk Atmosphere */}
+        <color attach="background" args={['#080C16']} />
+        <fog attach="fog" args={['#0F172A', 1900, 5200]} />
 
-        {stage.showAmbientMoon && (
-          <group position={[0, 480, -900]}>
-            <mesh>
-              <sphereGeometry args={[75, 32, 32]} />
-              <meshBasicMaterial {...({ color: '#E2E8F0', transparent: true, opacity: 0.65 } as any)} />
-            </mesh>
-            <pointLight color="#E2E8F0" intensity={0.4} distance={900} />
-          </group>
-        )}
+        {/* 3-Point Cinematic Lighting Pipeline */}
+        <ambientLight intensity={isDanger ? 0.35 : 0.65} color="#94A3B8" />
 
-        <ambientLight intensity={isDanger ? 0.25 : 0.65} color="#94A3B8" />
-
+        {/* Key Light (Warm Sunlight / High Front-Left) */}
         <directionalLight
-          position={[-400, 600, 400]}
-          intensity={isDanger ? 0.4 : 1.1}
+          position={[-350, 550, 400]}
+          intensity={isDanger ? 0.6 : 1.25}
           color="#FFF7ED"
         />
 
+        {/* Soft Cool Fill Light (Front-Right) */}
         <directionalLight
-          position={[400, 300, 200]}
-          intensity={isDanger ? 0.15 : 0.25}
+          position={[400, 250, 250]}
+          intensity={0.35}
           color="#CBD5E1"
         />
 
+        {/* Dramatic Golden Rim Light (Back-Top) - Creates the Pathlight Visuals Silhouette */}
         <directionalLight
-          position={[0, 400, -500]}
-          intensity={isDanger ? 1.4 : 0.8}
-          color={isDanger ? '#F59E0B' : '#38BDF8'}
+          position={[0, 450, -450]}
+          intensity={isDanger ? 2.4 : 1.9}
+          color={isDanger ? '#F59E0B' : '#E0E7FF'}
         />
 
         {isDanger && (
           <spotLight
-            position={[0, 700, 0]}
+            position={[0, 650, 0]}
             target-position={[0, -100, 0]}
-            intensity={2.8}
-            angle={0.6}
-            penumbra={0.5}
+            intensity={2.5}
+            angle={0.55}
+            penumbra={0.6}
             color="#FEF3C7"
           />
         )}
 
+        {/* Luxurious Polished Obsidian Stage Floor */}
         <mesh position={[0, -340, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[2600, 2600]} />
+          <planeGeometry args={[3000, 3000]} />
           <meshStandardMaterial
             {...({
-              color: stage.atmospherePalette?.floorHex || '#0D1322',
-              roughness: 0.22,
-              metalness: 0.75,
+              color: '#090D18',
+              roughness: 0.25,
+              metalness: 0.6,
             } as any)}
           />
         </mesh>
 
+        {/* Soft Ground Contact Shadow */}
         <ContactShadows
           position={[0, -339.5, 0]}
-          opacity={0.45}
-          scale={700}
+          opacity={0.4}
+          scale={850}
           blur={2.5}
-          far={120}
+          far={140}
           frames={1}
         />
 
-        {stage.elements.map((el) => {
-          if (el.geometryRecipe === 'COMPOUND_PRIMITIVES' && el.compoundParts) {
-            return (
-              <group key={el.id} position={el.position}>
-                {el.compoundParts.map((part, pIdx) => (
-                  <mesh key={pIdx} position={part.offset} rotation={part.rotationDeg ? [part.rotationDeg[0]*(Math.PI/180), part.rotationDeg[1]*(Math.PI/180), part.rotationDeg[2]*(Math.PI/180)] : [0,0,0]}>
-                    <boxGeometry args={part.size} />
-                    <meshStandardMaterial
-                      {...({
-                        color: el.color || '#1E293B',
-                        roughness: 0.75,
-                        metalness: 0.1,
-                      } as any)}
-                    />
-                  </mesh>
-                ))}
-              </group>
-            );
-          }
-          return (
-            <mesh key={el.id} position={el.position}>
-              <boxGeometry args={el.dimensions} />
-              <meshStandardMaterial
-                {...({
-                  color: el.color || '#06B6D4',
-                  emissive: el.emissiveGlow ? new THREE.Color(el.color || '#06B6D4') : undefined,
-                  emissiveIntensity: el.emissiveGlow ? 1.5 : 0,
-                  roughness: 0.3,
-                } as any)}
-              />
-            </mesh>
-          );
-        })}
+        {/* Sleek Minimalist Architectural Desk (Waist Level, Elegant & Non-Obtrusive) */}
+        <group position={[0, -170, 0]}>
+          {/* Desk Top */}
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[420, 10, 110]} />
+            <meshStandardMaterial
+              {...({
+                color: '#1E293B',
+                roughness: 0.5,
+                metalness: 0.3,
+              } as any)}
+            />
+          </mesh>
+          {/* Subtle Glowing Center Accent Line */}
+          <mesh position={[0, 5.2, 0]}>
+            <boxGeometry args={[4, 1, 108]} />
+            <meshStandardMaterial
+              {...({
+                color: '#38BDF8',
+                emissive: new THREE.Color('#38BDF8'),
+                emissiveIntensity: 1.5,
+              } as any)}
+            />
+          </mesh>
+          {/* Thin Elegant Desk Legs */}
+          <mesh position={[-195, -80, 0]}>
+            <boxGeometry args={[8, 160, 90]} />
+            <meshStandardMaterial
+              {...({
+                color: '#0F172A',
+                roughness: 0.7,
+                metalness: 0.2,
+              } as any)}
+            />
+          </mesh>
+          <mesh position={[195, -80, 0]}>
+            <boxGeometry args={[8, 160, 90]} />
+            <meshStandardMaterial
+              {...({
+                color: '#0F172A',
+                roughness: 0.7,
+                metalness: 0.2,
+              } as any)}
+            />
+          </mesh>
+        </group>
 
+        {/* Main Characters */}
         <CharacterRig state={activeBeat.victimState} isBystander={false} />
         <CharacterRig state={activeBeat.manipulatorState} isBystander={false} />
 
-        {stage.bystanderPositions &&
-          stage.bystanderPositions.map((pos, bIdx) => (
-            <group key={bIdx} position={pos}>
-              <CharacterRig
-                state={{
-                  pose: 'IDLE_NEUTRAL',
-                  positionX_3D: 0,
-                  positionY_3D: 0,
-                  positionZ_3D: 0,
-                }}
-                isBystander={true}
-              />
-            </group>
-          ))}
-
+        {/* Symbolic Hand-held Props (Cleanly Scaled, Zero Visual Clutter) */}
         {activeBeat.propEvents &&
           activeBeat.propEvents.map((prop) => (
             <PropRenderer key={prop.propId} prop={prop} />
           ))}
 
         <DepthParticles />
-
-        <EffectComposer multisampling={0}>
-          <Bloom
-            luminanceThreshold={1.1}
-            intensity={0.6}
-            radius={0.4}
-          />
-        </EffectComposer>
       </Canvas>
     </div>
   );
