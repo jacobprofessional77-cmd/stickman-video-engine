@@ -78,10 +78,10 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
   const facingYaw = (state.facingYawDeg || 0) * (Math.PI / 180);
 
   const armRightGeom = useMemo(() => {
-    const start = new THREE.Vector3(26, 100 + breathingOffset, 0);
+    const start = new THREE.Vector3(26, 100, 0);
     const mid = new THREE.Vector3(
       26 + 60 * Math.sin(sRRoll) * Math.cos(sRPitch),
-      100 + breathingOffset - 60 * Math.cos(sRPitch),
+      100 - 60 * Math.cos(sRPitch),
       60 * Math.sin(sRPitch)
     );
     const end = new THREE.Vector3(
@@ -90,13 +90,13 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
       mid.z + 60 * Math.sin(sRPitch + eRPitch)
     );
     return createLimbGeometry(start, mid, end, 8, 5);
-  }, [sRPitch, sRYaw, sRRoll, eRPitch, breathingOffset]);
+  }, [sRPitch, sRYaw, sRRoll, eRPitch]);
 
   const armLeftGeom = useMemo(() => {
-    const start = new THREE.Vector3(-26, 100 + breathingOffset, 0);
+    const start = new THREE.Vector3(-26, 100, 0);
     const mid = new THREE.Vector3(
       -26 - 60 * Math.sin(-sLRoll) * Math.cos(sLPitch),
-      100 + breathingOffset - 60 * Math.cos(sLPitch),
+      100 - 60 * Math.cos(sLPitch),
       60 * Math.sin(sLPitch)
     );
     const end = new THREE.Vector3(
@@ -105,7 +105,7 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
       mid.z + 60 * Math.sin(sLPitch + eLPitch)
     );
     return createLimbGeometry(start, mid, end, 8, 5);
-  }, [sLPitch, sLYaw, sLRoll, eLPitch, breathingOffset]);
+  }, [sLPitch, sLYaw, sLRoll, eLPitch]);
 
   const legRightGeom = useMemo(() => {
     const start = new THREE.Vector3(16, 0, 0);
@@ -132,22 +132,24 @@ export const CharacterRig: React.FC<CharacterRigProps> = ({ state, isBystander =
           <cylinderGeometry args={[20, 15, 50, 16]} />
         </mesh>
 
-        <mesh position={[0, 75 + breathingOffset, 0]} material={clayMaterial}>
-          <cylinderGeometry args={[25, 20, 45, 16]} />
-        </mesh>
-
-        <group position={[0, 100 + breathingOffset, 0]} rotation={[neckPitch, neckYaw, 0]}>
-          <mesh position={[0, 6, 0]} material={clayMaterial}>
-            <cylinderGeometry args={[8, 9, 12, 16]} />
+        <group position={[0, breathingOffset, 0]}>
+          <mesh position={[0, 75, 0]} material={clayMaterial}>
+            <cylinderGeometry args={[25, 20, 45, 16]} />
           </mesh>
 
-          <mesh position={[0, 30, 0]} material={clayMaterial}>
-            <sphereGeometry args={[24, 32, 32]} />
-          </mesh>
+          <group position={[0, 100, 0]} rotation={[neckPitch, neckYaw, 0]}>
+            <mesh position={[0, 6, 0]} material={clayMaterial}>
+              <cylinderGeometry args={[8, 9, 12, 16]} />
+            </mesh>
+
+            <mesh position={[0, 30, 0]} material={clayMaterial}>
+              <sphereGeometry args={[24, 32, 32]} />
+            </mesh>
+          </group>
+
+          <mesh geometry={armRightGeom} material={clayMaterial} />
+          <mesh geometry={armLeftGeom} material={clayMaterial} />
         </group>
-
-        <mesh geometry={armRightGeom} material={clayMaterial} />
-        <mesh geometry={armLeftGeom} material={clayMaterial} />
       </group>
 
       <mesh geometry={legRightGeom} material={clayMaterial} />

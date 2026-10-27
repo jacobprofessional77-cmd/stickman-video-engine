@@ -152,19 +152,11 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
 
         <mesh position={[0, -340, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[2600, 2600]} />
-          <MeshReflectorMaterial
+          <meshStandardMaterial
             {...({
-              blur: [60, 20],
-              resolution: 512,
-              mirror: stage.floorReflectivity || 0.6,
-              mixBlur: 0.7,
-              mixStrength: 1.5,
-              roughness: 0.6,
-              depthScale: 1.2,
-              minDepthThreshold: 0.4,
-              maxDepthThreshold: 1.4,
               color: stage.atmospherePalette?.floorHex || '#0D1322',
-              metalness: 0.2,
+              roughness: 0.22,
+              metalness: 0.75,
             } as any)}
           />
         </mesh>
@@ -239,9 +231,8 @@ export const Stage3D: React.FC<Stage3DProps> = ({ stage, beats }) => {
         <EffectComposer multisampling={2}>
           <Bloom
             luminanceThreshold={1.1}
-            mipmapBlur
-            intensity={0.85}
-            radius={0.6}
+            intensity={0.75}
+            radius={0.5}
           />
         </EffectComposer>
       </Canvas>
